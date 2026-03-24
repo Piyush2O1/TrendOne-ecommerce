@@ -37,7 +37,7 @@ const ProductDetail: React.FC = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+      const response = await axios.get(`/api/products/${id}`);
       setProduct(response.data);
     } catch (err) {
       setError('Failed to load product');

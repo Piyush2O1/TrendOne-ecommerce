@@ -67,7 +67,7 @@ const Checkout: React.FC = () => {
       };
 
       // Place the order
-      const orderResponse = await axios.post('http://localhost:5000/api/orders',
+      const orderResponse = await axios.post('/api/orders',
         { shippingAddress },
         config
       );
@@ -75,7 +75,7 @@ const Checkout: React.FC = () => {
       const order = orderResponse.data;
 
       // Create Razorpay order
-      const paymentResponse = await axios.post('http://localhost:5000/api/payment/create-order',
+      const paymentResponse = await axios.post('/api/payment/create-order',
         { orderId: order._id },
         config
       );
@@ -93,7 +93,7 @@ const Checkout: React.FC = () => {
         // Simulate successful payment
         setTimeout(async () => {
           try {
-            await axios.post('http://localhost:5000/api/payment/verify', {
+            await axios.post('/api/payment/verify', {
               razorpay_order_id: mockResponse.razorpay_order_id,
               razorpay_payment_id: mockResponse.razorpay_payment_id,
               razorpay_signature: mockResponse.razorpay_signature,
@@ -123,7 +123,7 @@ const Checkout: React.FC = () => {
         handler: async (response: any) => {
           try {
             // Verify payment
-            await axios.post('http://localhost:5000/api/payment/verify', {
+            await axios.post('/api/payment/verify', {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,

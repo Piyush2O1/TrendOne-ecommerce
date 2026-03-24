@@ -38,7 +38,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ productId, onReviewAdded }) => 
       };
 
       await axios.post(
-        `http://localhost:5000/api/products/${productId}/reviews`,
+        `/api/products/${productId}/reviews`,
         { rating, comment },
         config
       );

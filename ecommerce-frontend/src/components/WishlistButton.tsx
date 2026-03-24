@@ -29,7 +29,7 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({ productId, className = 
       };
 
       const response = await axios.get(
-        `http://localhost:5000/api/wishlist/check/${productId}`,
+        `/api/wishlist/check/${productId}`,
         config
       );
       setInWishlist(response.data.inWishlist);
@@ -56,11 +56,11 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({ productId, className = 
 
       if (inWishlist) {
         // Remove from wishlist
-        await axios.delete(`http://localhost:5000/api/wishlist/${productId}`, config);
+        await axios.delete(`/api/wishlist/${productId}`, config);
         setInWishlist(false);
       } else {
         // Add to wishlist
-        await axios.post(`http://localhost:5000/api/wishlist/${productId}`, {}, config);
+        await axios.post(`/api/wishlist/${productId}`, {}, config);
         setInWishlist(true);
       }
     } catch (error: any) {

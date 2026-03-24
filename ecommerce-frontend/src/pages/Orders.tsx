@@ -40,7 +40,7 @@ const Orders: React.FC = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/orders');
+      const response = await axios.get('/api/orders');
       setOrders(response.data);
     } catch (err) {
       setError('Failed to load orders');

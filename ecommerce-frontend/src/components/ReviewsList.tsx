@@ -30,7 +30,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ productId }) => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/products/${productId}/reviews`);
+      const response = await axios.get(`/api/products/${productId}/reviews`);
       setReviews(response.data.data);
     } catch (error) {
       console.error('Error fetching reviews:', error);

@@ -46,7 +46,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/cart');
+      const response = await axios.get('/api/cart');
       setCart(response.data.items || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -60,7 +60,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setLoading(true);
-      await axios.post('http://localhost:5000/api/cart', {
+      await axios.post('/api/cart', {
         productId,
         quantity,
       });
@@ -78,7 +78,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setLoading(true);
-      await axios.delete(`http://localhost:5000/api/cart/${productId}`);
+      await axios.delete(`/api/cart/${productId}`);
       await getCart(); // Refresh cart
     } catch (error) {
       console.error('Error removing from cart:', error);

@@ -67,9 +67,9 @@ const AdminDashboard: React.FC = () => {
 
       // Fetch all data in parallel
       const [usersRes, productsRes, ordersRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/auth/users'), // We'll need to add this endpoint
-        axios.get('http://localhost:5000/api/products'),
-        axios.get('http://localhost:5000/api/orders/admin/all'),
+        axios.get('/api/auth/users'), // We'll need to add this endpoint
+        axios.get('/api/products'),
+        axios.get('/api/orders/admin/all'),
       ]);
 
       const usersData = usersRes.data;
@@ -98,9 +98,9 @@ const AdminDashboard: React.FC = () => {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      await axios.put(`http://localhost:5000/api/orders/${orderId}`, { status });
+      await axios.put(`/api/orders/${orderId}`, { status });
       // Refresh orders
-      const ordersRes = await axios.get('http://localhost:5000/api/orders/admin/all');
+      const ordersRes = await axios.get('/api/orders/admin/all');
       setOrders(ordersRes.data);
       alert('Order status updated successfully!');
     } catch (error) {
@@ -112,9 +112,9 @@ const AdminDashboard: React.FC = () => {
   const deleteProduct = async (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/products/${productId}`);
+        await axios.delete(`/api/products/${productId}`);
         // Refresh products
-        const productsRes = await axios.get('http://localhost:5000/api/products');
+        const productsRes = await axios.get('/api/products');
         setProducts(productsRes.data);
         alert('Product deleted successfully!');
       } catch (error) {
@@ -136,13 +136,13 @@ const AdminDashboard: React.FC = () => {
 
   const handleProductSave = async () => {
     // Refresh products list
-    const productsRes = await axios.get('http://localhost:5000/api/products');
+    const productsRes = await axios.get('/api/products');
     const productsData = productsRes.data.products || productsRes.data || [];
     setProducts(productsData);
 
     // Refresh stats
-    const usersRes = await axios.get('http://localhost:5000/api/auth/users');
-    const ordersRes = await axios.get('http://localhost:5000/api/orders/admin/all');
+    const usersRes = await axios.get('/api/auth/users');
+    const ordersRes = await axios.get('/api/orders/admin/all');
 
     const usersData = usersRes.data;
     const ordersData = ordersRes.data;

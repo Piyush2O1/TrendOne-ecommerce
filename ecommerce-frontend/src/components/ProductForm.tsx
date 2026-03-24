@@ -99,10 +99,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) =
 
       if (product?._id) {
         // Update product
-        await axios.put(`http://localhost:5000/api/products/${product._id}`, formData, config);
+        await axios.put(`/api/products/${product._id}`, formData, config);
       } else {
         // Create new product
-        await axios.post('http://localhost:5000/api/products', formData, config);
+        await axios.post('/api/products', formData, config);
       }
 
       onSave();

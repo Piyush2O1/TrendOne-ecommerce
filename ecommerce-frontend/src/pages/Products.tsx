@@ -52,7 +52,7 @@ const Products: React.FC = () => {
       if (ratingFilter) params.rating = ratingFilter;
       if (sort) params.sort = sort;
 
-      const response = await axios.get('http://localhost:5000/api/products', { params });
+      const response = await axios.get('/api/products', { params });
       setProducts(response.data.products);
       setTotalPages(response.data.pages || 1);
     } catch (err) {
