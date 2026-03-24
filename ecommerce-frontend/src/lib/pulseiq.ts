@@ -13,7 +13,7 @@ function getAnonId() {
   return id;
 }
 
-export function track(eventName, properties = {}) {
+export function track(eventName: string, properties: Record<string, any> = {}): void {
   fetch(CONFIG.endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": CONFIG.apiKey },
@@ -27,7 +27,7 @@ export function track(eventName, properties = {}) {
   }).catch(() => {});
 }
 
-export function identify(userId) {
+export function identify(userId: string | number): void {
   localStorage.setItem("_piq_user", String(userId));
   track("identify", { userId });
 }
