@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+const normalizeCategory = (category) => (
+  typeof category === 'string' ? category.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : category
+);
+
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -16,8 +20,7 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    lowercase: true,
-    trim: true,
+    set: normalizeCategory,
   },
   stock: {
     type: Number,
@@ -39,6 +42,13 @@ const productSchema = new mongoose.Schema({
   },
 }, {
   timestamps: true,
+});
+
+productSchema.pre('save', function(next) {
+  if (this.category) {
+    this.category = normalizeCategory(this.category);
+  }
+  next();
 });
 
 module.exports = mongoose.model('Product', productSchema);

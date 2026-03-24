@@ -1,7 +1,7 @@
 const Product = require('../models/Product');
 
 const normalizeCategory = (category) => (
-  typeof category === 'string' ? category.trim().toLowerCase() : category
+  typeof category === 'string' ? category.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : category
 );
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
