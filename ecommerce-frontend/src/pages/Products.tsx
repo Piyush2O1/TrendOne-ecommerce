@@ -16,6 +16,25 @@ interface Product {
   imageUrl?: string;
 }
 
+interface ProductsResponse {
+  products: Product[];
+  pages: number;
+}
+
+const CATEGORY_OPTIONS = [
+  { value: 'all', label: 'All Categories' },
+  { value: 'electronics', label: 'Electronics' },
+  { value: 'clothing', label: 'Clothing' },
+  { value: 'books', label: 'Books' },
+  { value: 'home-garden', label: 'Home & Garden' },
+  { value: 'sports-fitness', label: 'Sports & Fitness' },
+  { value: 'appliances', label: 'Appliances' },
+  { value: 'furniture', label: 'Furniture' },
+  { value: 'beauty-personal-care', label: 'Beauty & Personal Care' },
+  { value: 'toys-games', label: 'Toys & Games' },
+  { value: 'automotive', label: 'Automotive' },
+] as const;
+
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +71,7 @@ const Products: React.FC = () => {
       if (ratingFilter) params.rating = ratingFilter;
       if (sort) params.sort = sort;
 
-      const response = await axios.get('/api/products', { params });
+      const response = await axios.get<ProductsResponse>('/api/products', { params });
       setProducts(response.data.products);
       setTotalPages(response.data.pages || 1);
     } catch (err) {
@@ -113,12 +132,11 @@ const Products: React.FC = () => {
           />
 
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            <option value="all">All Categories</option>
-            <option value="electronics">Electronics</option>
-            <option value="fashion">Fashion</option>
-            <option value="home">Home</option>
-            <option value="books">Books</option>
-            <option value="beauty">Beauty</option>
+            {CATEGORY_OPTIONS.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
+              </option>
+            ))}
           </select>
 
           <input

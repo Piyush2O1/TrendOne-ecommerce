@@ -1,5 +1,11 @@
 const Product = require('../models/Product');
 
+const normalizeCategory = (category) => (
+  typeof category === 'string' ? category.trim().toLowerCase() : category
+);
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Public
@@ -26,7 +32,11 @@ const getProducts = async (req, res) => {
     }
 
     if (category && category !== 'all') {
-      query.category = category;
+      const normalizedCategory = normalizeCategory(category);
+      query.category = {
+        $regex: `^${escapeRegex(normalizedCategory)}$`,
+        $options: 'i',
+      };
     }
 
     if (minPrice) {
@@ -94,7 +104,7 @@ const createProduct = async (req, res) => {
       name,
       description,
       price,
-      category,
+      category: normalizeCategory(category),
       stock,
       imageUrl,
     });
@@ -116,12 +126,12 @@ const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (product) {
-      product.name = name || product.name;
-      product.description = description || product.description;
-      product.price = price || product.price;
-      product.category = category || product.category;
-      product.stock = stock || product.stock;
-      product.imageUrl = imageUrl || product.imageUrl;
+      if (name !== undefined) product.name = name;
+      if (description !== undefined) product.description = description;
+      if (price !== undefined) product.price = price;
+      if (category !== undefined) product.category = normalizeCategory(category);
+      if (stock !== undefined) product.stock = stock;
+      if (imageUrl !== undefined) product.imageUrl = imageUrl;
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);

@@ -23,11 +23,13 @@ interface Product {
   createdAt: string;
 }
 
+type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'failed';
+
 interface Order {
   _id: string;
   user: User;
   totalPrice: number;
-  status: string;
+  status: OrderStatus;
   createdAt: string;
   products: any[];
 }
@@ -38,6 +40,12 @@ interface DashboardStats {
   totalOrders: number;
   totalRevenue: number;
 }
+
+interface ProductsResponse {
+  products: Product[];
+}
+
+const ORDER_STATUSES: OrderStatus[] = ['pending', 'paid', 'shipped', 'delivered', 'failed'];
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -61,19 +69,24 @@ const AdminDashboard: React.FC = () => {
     }
   }, [user]);
 
+  const fetchProducts = async (): Promise<Product[]> => {
+    const { data } = await axios.get<ProductsResponse>('/api/products');
+    return data.products;
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
 
       // Fetch all data in parallel
       const [usersRes, productsRes, ordersRes] = await Promise.all([
-        axios.get('/api/auth/users'), // We'll need to add this endpoint
-        axios.get('/api/products'),
-        axios.get('/api/orders/admin/all'),
+        axios.get<User[]>('/api/auth/users'),
+        fetchProducts(),
+        axios.get<Order[]>('/api/orders/admin/all'),
       ]);
 
       const usersData = usersRes.data;
-      const productsData = productsRes.data.products || productsRes.data || [];
+      const productsData = productsRes;
       const ordersData = ordersRes.data;
 
       // Calculate stats
@@ -96,11 +109,11 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     try {
       await axios.put(`/api/orders/${orderId}`, { status });
       // Refresh orders
-      const ordersRes = await axios.get('/api/orders/admin/all');
+      const ordersRes = await axios.get<Order[]>('/api/orders/admin/all');
       setOrders(ordersRes.data);
       alert('Order status updated successfully!');
     } catch (error) {
@@ -114,8 +127,12 @@ const AdminDashboard: React.FC = () => {
       try {
         await axios.delete(`/api/products/${productId}`);
         // Refresh products
-        const productsRes = await axios.get('/api/products');
-        setProducts(productsRes.data);
+        const productsData = await fetchProducts();
+        setProducts(productsData);
+        setStats((current) => ({
+          ...current,
+          totalProducts: productsData.length,
+        }));
         alert('Product deleted successfully!');
       } catch (error) {
         console.error('Error deleting product:', error);
@@ -136,13 +153,12 @@ const AdminDashboard: React.FC = () => {
 
   const handleProductSave = async () => {
     // Refresh products list
-    const productsRes = await axios.get('/api/products');
-    const productsData = productsRes.data.products || productsRes.data || [];
+    const productsData = await fetchProducts();
     setProducts(productsData);
 
     // Refresh stats
-    const usersRes = await axios.get('/api/auth/users');
-    const ordersRes = await axios.get('/api/orders/admin/all');
+    const usersRes = await axios.get<User[]>('/api/auth/users');
+    const ordersRes = await axios.get<Order[]>('/api/orders/admin/all');
 
     const usersData = usersRes.data;
     const ordersData = ordersRes.data;
@@ -150,7 +166,7 @@ const AdminDashboard: React.FC = () => {
 
     setStats({
       totalUsers: usersData.length,
-      totalProducts: productsRes.data.length,
+      totalProducts: productsData.length,
       totalOrders: ordersData.length,
       totalRevenue,
     });
@@ -365,14 +381,14 @@ const AdminDashboard: React.FC = () => {
                       <td>
                         <select
                           value={order.status}
-                          onChange={(e) => updateOrderStatus(order._id, e.target.value)}
+                          onChange={(e) => updateOrderStatus(order._id, e.target.value as OrderStatus)}
                           className="status-select"
                         >
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
+                          {ORDER_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </option>
+                          ))}
                         </select>
                       </td>
                       <td>{new Date(order.createdAt).toLocaleDateString()}</td>

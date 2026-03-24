@@ -18,6 +18,19 @@ interface ProductFormProps {
   onSave: () => void;
 }
 
+const CATEGORY_OPTIONS = [
+  { value: 'electronics', label: 'Electronics' },
+  { value: 'clothing', label: 'Clothing' },
+  { value: 'books', label: 'Books' },
+  { value: 'home-garden', label: 'Home & Garden' },
+  { value: 'sports-fitness', label: 'Sports & Fitness' },
+  { value: 'appliances', label: 'Appliances' },
+  { value: 'furniture', label: 'Furniture' },
+  { value: 'beauty-personal-care', label: 'Beauty & Personal Care' },
+  { value: 'toys-games', label: 'Toys & Games' },
+  { value: 'automotive', label: 'Automotive' },
+] as const;
+
 const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) => {
   const [formData, setFormData] = useState<Product>({
     name: '',
@@ -29,19 +42,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) =
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-
-  const categories = [
-    'Electronics',
-    'Clothing',
-    'Books',
-    'Home & Garden',
-    'Sports & Fitness',
-    'Appliances',
-    'Furniture',
-    'Beauty & Personal Care',
-    'Toys & Games',
-    'Automotive',
-  ];
 
   useEffect(() => {
     if (product) {
@@ -74,7 +74,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) =
 
     if (!formData.name.trim()) newErrors.name = 'Product name is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
+    if (formData.price < 0) newErrors.price = 'Price cannot be negative';
     if (!formData.category) newErrors.category = 'Category is required';
     if (formData.stock < 0) newErrors.stock = 'Stock cannot be negative';
 
@@ -199,8 +199,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) =
               className={errors.category ? 'error' : ''}
             >
               <option value="">Select a category</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
+              {CATEGORY_OPTIONS.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
               ))}
             </select>
             {errors.category && <span className="error-message">{errors.category}</span>}
