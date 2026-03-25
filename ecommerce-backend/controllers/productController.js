@@ -24,10 +24,12 @@ const getProducts = async (req, res) => {
 
     const query = {};
 
-    if (keyword) {
+    const normalizedKeyword = typeof keyword === 'string' ? escapeRegex(keyword.trim()) : '';
+
+    if (normalizedKeyword) {
       query.$or = [
-        { name: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } },
+        { name: { $regex: normalizedKeyword, $options: 'i' } },
+        { description: { $regex: normalizedKeyword, $options: 'i' } },
       ];
     }
 

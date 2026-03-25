@@ -20,6 +20,7 @@ const Checkout: React.FC = () => {
     country: '',
   });
   const [loading, setLoading] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const { cart, clearCart } = useCart();
@@ -38,7 +39,47 @@ const Checkout: React.FC = () => {
     }));
   };
 
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('token');
+
+    return {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    };
+  };
+
+  const verifyAndCompletePayment = async (
+    paymentData: {
+      razorpay_order_id: string;
+      razorpay_payment_id: string;
+      razorpay_signature: string;
+    },
+    orderId: string,
+    successMessage: string
+  ) => {
+    try {
+      await axios.post('/api/payment/verify', {
+        ...paymentData,
+        orderId,
+      });
+
+      setPendingOrderId(null);
+      clearCart();
+      alert(successMessage);
+      navigate('/orders');
+    } catch (error) {
+      setPendingOrderId(null);
+      setLoading(false);
+      alert('Payment verification failed');
+    }
+  };
+
   const handlePlaceOrder = async () => {
+    if (loading) {
+      return;
+    }
+
     if (!user) {
       alert('Please login to place an order');
       return;
@@ -58,25 +99,25 @@ const Checkout: React.FC = () => {
 
     try {
       setLoading(true);
+      const config = getAuthConfig();
 
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-        },
-      };
+      let orderId: string;
+      if (pendingOrderId) {
+        orderId = pendingOrderId;
+      } else {
+        // Place the order once, then reuse it for payment retries.
+        const orderResponse = await axios.post('/api/orders',
+          { shippingAddress },
+          config
+        );
 
-      // Place the order
-      const orderResponse = await axios.post('/api/orders',
-        { shippingAddress },
-        config
-      );
-
-      const order = orderResponse.data;
+        orderId = orderResponse.data._id;
+        setPendingOrderId(orderId);
+      }
 
       // Create Razorpay order
       const paymentResponse = await axios.post('/api/payment/create-order',
-        { orderId: order._id },
+        { orderId },
         config
       );
 
@@ -91,21 +132,12 @@ const Checkout: React.FC = () => {
         };
 
         // Simulate successful payment
-        setTimeout(async () => {
-          try {
-            await axios.post('/api/payment/verify', {
-              razorpay_order_id: mockResponse.razorpay_order_id,
-              razorpay_payment_id: mockResponse.razorpay_payment_id,
-              razorpay_signature: mockResponse.razorpay_signature,
-              orderId: order._id,
-            });
-
-            clearCart();
-            alert('Mock payment successful! Order placed. (Testing Mode)');
-            navigate('/orders');
-          } catch (error) {
-            alert('Mock payment verification failed');
-          }
+        window.setTimeout(() => {
+          void verifyAndCompletePayment(
+            mockResponse,
+            orderId,
+            'Mock payment successful! Order placed. (Testing Mode)'
+          );
         }, 2000); // Simulate payment processing delay
 
         alert('Redirecting to mock payment... (Testing Mode)');
@@ -121,25 +153,24 @@ const Checkout: React.FC = () => {
         description: 'Purchase from E-Commerce Store',
         order_id: razorpayOrderId,
         handler: async (response: any) => {
-          try {
-            // Verify payment
-            await axios.post('/api/payment/verify', {
+          await verifyAndCompletePayment(
+            {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              orderId: order._id,
-            });
-
-            clearCart();
-            alert('Payment successful! Order placed.');
-            navigate('/orders');
-          } catch (error) {
-            alert('Payment verification failed');
-          }
+            },
+            orderId,
+            'Payment successful! Order placed.'
+          );
         },
         prefill: {
           name: user.name,
           email: user.email,
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+          },
         },
         theme: {
           color: '#3399cc',
@@ -151,9 +182,8 @@ const Checkout: React.FC = () => {
 
     } catch (error) {
       console.error('Order placement failed:', error);
-      alert('Failed to place order');
-    } finally {
       setLoading(false);
+      alert('Failed to place order');
     }
   };
 

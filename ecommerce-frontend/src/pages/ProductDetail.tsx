@@ -68,6 +68,10 @@ const ProductDetail: React.FC = () => {
     setShowReviewForm(false);
   };
 
+  const handleReviewsChanged = () => {
+    fetchProduct();
+  };
+
   const renderStars = (rating: number) => {
     return [...Array(5)].map((_, index) => (
       <span key={index} className={`star ${index < Math.floor(rating) ? 'filled' : ''}`}>
@@ -152,7 +156,7 @@ const ProductDetail: React.FC = () => {
         )}
 
         <div className="reviews-section">
-          <ReviewsList productId={product._id} />
+          <ReviewsList productId={product._id} onReviewsChanged={handleReviewsChanged} />
         </div>
       </div>
     </div>
