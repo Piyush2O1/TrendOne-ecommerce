@@ -1,5 +1,12 @@
 const User = require('../models/User');
 
+const serializeUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+});
+
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
@@ -18,7 +25,6 @@ const register = async (req, res) => {
       name,
       email,
       password,
-      role: 'user',
     });
 
     // Create token
@@ -27,12 +33,7 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: serializeUser(user),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -64,12 +65,7 @@ const login = async (req, res) => {
     res.json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: serializeUser(user),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -85,12 +81,7 @@ const getMe = async (req, res) => {
 
     res.json({
       success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: serializeUser(user),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
