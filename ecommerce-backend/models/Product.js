@@ -29,6 +29,14 @@ const productSchema = new mongoose.Schema({
   imageUrl: {
     type: String,
   },
+  seller: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required() {
+      return this.isNew;
+    },
+    index: true,
+  },
   ratingsAverage: {
     type: Number,
     default: 4.5,

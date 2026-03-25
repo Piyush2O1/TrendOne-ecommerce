@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { track } from './lib/pulseiq';
+import RoleRoute from './components/RoleRoute';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -13,6 +14,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import AdminDashboard from './pages/AdminDashboard';
+import MyProducts from './pages/MyProducts';
 import './App.css';
 
 function AppContent() {
@@ -35,7 +37,22 @@ function AppContent() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route
+            path="/my-products"
+            element={(
+              <RoleRoute allowedRoles={['seller']}>
+                <MyProducts />
+              </RoleRoute>
+            )}
+          />
+          <Route
+            path="/admin"
+            element={(
+              <RoleRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </RoleRoute>
+            )}
+          />
         </Routes>
       </main>
     </div>

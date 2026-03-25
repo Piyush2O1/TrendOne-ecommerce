@@ -157,6 +157,7 @@ tbody tr:last-child td {
 .status.paid { background: #d4edda; color: #155724; }
 
 .role.user { background: #e9ecef; color: #495057; }
+.role.seller { background: #ffedd5; color: #9a3412; }
 .role.admin { background: #667eea; color: white; }
 
 /* Buttons */

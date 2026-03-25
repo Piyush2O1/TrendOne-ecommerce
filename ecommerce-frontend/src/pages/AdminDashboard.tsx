@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import ProductForm from '../components/ProductForm';
+import { fetchAllProducts, type ProductRecord } from '../utils/productApi';
 import './AdminDashboard.css';
 
 interface User {
@@ -9,17 +10,6 @@ interface User {
   name: string;
   email: string;
   role: string;
-  createdAt: string;
-}
-
-interface Product {
-  _id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  stock: number;
-  imageUrl?: string;
   createdAt: string;
 }
 
@@ -41,10 +31,6 @@ interface DashboardStats {
   totalRevenue: number;
 }
 
-interface ProductsResponse {
-  products: Product[];
-}
-
 const ORDER_STATUSES: OrderStatus[] = ['pending', 'paid', 'shipped', 'delivered', 'failed'];
 
 const AdminDashboard: React.FC = () => {
@@ -56,12 +42,12 @@ const AdminDashboard: React.FC = () => {
     totalRevenue: 0,
   });
   const [users, setUsers] = useState<User[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'products' | 'orders'>('overview');
   const [loading, setLoading] = useState(true);
   const [showProductForm, setShowProductForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductRecord | null>(null);
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -69,9 +55,8 @@ const AdminDashboard: React.FC = () => {
     }
   }, [user]);
 
-  const fetchProducts = async (): Promise<Product[]> => {
-    const { data } = await axios.get<ProductsResponse>('/api/products');
-    return data.products;
+  const fetchProducts = async (): Promise<ProductRecord[]> => {
+    return fetchAllProducts();
   };
 
   const fetchDashboardData = async () => {
@@ -146,7 +131,7 @@ const AdminDashboard: React.FC = () => {
     setShowProductForm(true);
   };
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = (product: ProductRecord) => {
     setEditingProduct(product);
     setShowProductForm(true);
   };
@@ -248,7 +233,7 @@ const AdminDashboard: React.FC = () => {
               </div>
               <div className="stat-card">
                 <h3>Total Revenue</h3>
-                <div className="stat-number">₹{stats.totalRevenue.toLocaleString()}</div>
+                <div className="stat-number">INR {stats.totalRevenue.toLocaleString()}</div>
               </div>
             </div>
 
@@ -270,7 +255,7 @@ const AdminDashboard: React.FC = () => {
                       <tr key={order._id}>
                         <td>{order._id.slice(-8)}</td>
                         <td>{order.user.name}</td>
-                        <td>₹{order.totalPrice}</td>
+                        <td>INR {order.totalPrice}</td>
                         <td>
                           <span className={`status ${order.status}`}>{order.status}</span>
                         </td>
@@ -336,7 +321,7 @@ const AdminDashboard: React.FC = () => {
                     <tr key={product._id}>
                       <td>{product.name}</td>
                       <td>{product.category}</td>
-                      <td>₹{product.price}</td>
+                      <td>INR {product.price}</td>
                       <td>{product.stock}</td>
                       <td>
                         <button className="edit-btn" onClick={() => handleEditProduct(product)}>Edit</button>
@@ -377,7 +362,7 @@ const AdminDashboard: React.FC = () => {
                       <td>{order._id.slice(-8)}</td>
                       <td>{order.user.name}</td>
                       <td>{order.products.length} items</td>
-                      <td>₹{order.totalPrice}</td>
+                      <td>INR {order.totalPrice}</td>
                       <td>
                         <select
                           value={order.status}

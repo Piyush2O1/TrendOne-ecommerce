@@ -7,13 +7,13 @@ const {
   updateProduct,
   deleteProduct,
 } = require('../controllers/productController');
-const { protect, isAdmin } = require('../middleware/auth');
+const { protect, isSeller } = require('../middleware/auth');
 
 // Include review routes
 const reviewRouter = require('./reviewRoutes');
 router.use('/:productId/reviews', reviewRouter);
 
-router.route('/').get(getProducts).post(protect, isAdmin, createProduct);
-router.route('/:id').get(getProductById).put(protect, isAdmin, updateProduct).delete(protect, isAdmin, deleteProduct);
+router.route('/').get(getProducts).post(protect, isSeller, createProduct);
+router.route('/:id').get(getProductById).put(protect, isSeller, updateProduct).delete(protect, isSeller, deleteProduct);
 
 module.exports = router;

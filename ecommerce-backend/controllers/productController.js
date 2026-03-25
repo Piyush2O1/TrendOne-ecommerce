@@ -6,6 +6,16 @@ const normalizeCategory = (category) => (
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const findManagedProductById = (productId, user) => {
+  const query = { _id: productId };
+
+  if (user.role === 'seller') {
+    query.seller = user.id;
+  }
+
+  return Product.findOne(query);
+};
+
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Public
@@ -97,7 +107,7 @@ const getProductById = async (req, res) => {
 
 // @desc    Create a product
 // @route   POST /api/products
-// @access  Private/Admin
+// @access  Private/Seller/Admin
 const createProduct = async (req, res) => {
   try {
     const { name, description, price, category, stock, imageUrl } = req.body;
@@ -109,6 +119,7 @@ const createProduct = async (req, res) => {
       category: normalizeCategory(category),
       stock,
       imageUrl,
+      seller: req.user.id,
     });
 
     const createdProduct = await product.save();
@@ -120,12 +131,12 @@ const createProduct = async (req, res) => {
 
 // @desc    Update a product
 // @route   PUT /api/products/:id
-// @access  Private/Admin
+// @access  Private/Seller/Admin
 const updateProduct = async (req, res) => {
   try {
     const { name, description, price, category, stock, imageUrl } = req.body;
 
-    const product = await Product.findById(req.params.id);
+    const product = await findManagedProductById(req.params.id, req.user);
 
     if (product) {
       if (name !== undefined) product.name = name;
@@ -147,13 +158,13 @@ const updateProduct = async (req, res) => {
 
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
-// @access  Private/Admin
+// @access  Private/Seller/Admin
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await findManagedProductById(req.params.id, req.user);
 
     if (product) {
-      await Product.findByIdAndDelete(req.params.id);
+      await product.deleteOne();
       res.json({ message: 'Product removed' });
     } else {
       res.status(404).json({ message: 'Product not found' });

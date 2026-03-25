@@ -120,6 +120,49 @@
   color: white !important;
 }
 
+.seller-link {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white !important;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.seller-link:hover {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+  color: white !important;
+}
+
+.user-role {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.user-role.user {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.user-role.seller {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.user-role.admin {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
 @media (max-width: 768px) {
   .navbar-container {
     flex-direction: column;

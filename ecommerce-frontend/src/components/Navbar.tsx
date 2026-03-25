@@ -8,6 +8,9 @@ const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { cart } = useCart();
   const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin';
+  const isSeller = user?.role === 'seller';
+  const showShoppingLinks = !!user && !isAdmin;
 
   const handleLogout = () => {
     logout();
@@ -27,16 +30,11 @@ const Navbar: React.FC = () => {
           <li>
             <Link to="/products">Products</Link>
           </li>
-          {user && (
+          {showShoppingLinks && (
             <>
               <li>
                 <Link to="/orders">Orders</Link>
               </li>
-              {user.role === 'admin' && (
-                <li>
-                  <Link to="/admin" className="admin-link">Admin Dashboard</Link>
-                </li>
-              )}
               <li>
                 <Link to="/cart" className="cart-link">
                   Cart
@@ -47,12 +45,25 @@ const Navbar: React.FC = () => {
               </li>
             </>
           )}
+          {isSeller && (
+            <li>
+              <Link to="/my-products" className="seller-link">My Products</Link>
+            </li>
+          )}
+          {isAdmin && (
+            <li>
+              <Link to="/admin" className="admin-link">Admin Dashboard</Link>
+            </li>
+          )}
         </ul>
 
         <div className="navbar-auth">
           {user ? (
             <div className="user-menu">
-              <span>Welcome, {user.name}</span>
+              <span>
+                Welcome, {user.name}
+                <span className={`user-role ${user.role}`}>{user.role}</span>
+              </span>
               <button onClick={handleLogout} className="logout-btn">
                 Logout
               </button>
