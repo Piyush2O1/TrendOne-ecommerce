@@ -114,7 +114,9 @@ const deleteReview = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this review' });
     }
 
-    await review.remove();
+    const productId = review.product;
+    await review.deleteOne();
+    await Review.calcAverageRating(productId);
 
     res.json({
       success: true,

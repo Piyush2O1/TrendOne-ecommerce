@@ -8,11 +8,20 @@ const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
     const userId = req.user.id;
+    const requestedQuantity = Number(quantity);
+
+    if (!Number.isInteger(requestedQuantity) || requestedQuantity < 1) {
+      return res.status(400).json({ message: 'Quantity must be a positive integer' });
+    }
 
     // Check if product exists
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (product.stock < requestedQuantity) {
+      return res.status(400).json({ message: 'Requested quantity exceeds available stock' });
     }
 
     // Check if user has a cart
@@ -22,7 +31,7 @@ const addToCart = async (req, res) => {
       // Create new cart
       cart = new Cart({
         user: userId,
-        items: [{ product: productId, quantity }],
+        items: [{ product: productId, quantity: requestedQuantity }],
       });
     } else {
       // Check if product already in cart
@@ -32,10 +41,14 @@ const addToCart = async (req, res) => {
 
       if (itemIndex > -1) {
         // Update quantity
-        cart.items[itemIndex].quantity += quantity;
+        const updatedQuantity = cart.items[itemIndex].quantity + requestedQuantity;
+        if (updatedQuantity > product.stock) {
+          return res.status(400).json({ message: 'Requested quantity exceeds available stock' });
+        }
+        cart.items[itemIndex].quantity = updatedQuantity;
       } else {
         // Add new item
-        cart.items.push({ product: productId, quantity });
+        cart.items.push({ product: productId, quantity: requestedQuantity });
       }
     }
 

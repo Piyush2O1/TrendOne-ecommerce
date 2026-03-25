@@ -64,8 +64,8 @@ reviewSchema.post('save', function() {
   this.constructor.calcAverageRating(this.product);
 });
 
-// Call calcAverageRating after remove
-reviewSchema.post('remove', function() {
+// Call calcAverageRating after document deletion
+reviewSchema.post('deleteOne', { document: true, query: false }, function() {
   this.constructor.calcAverageRating(this.product);
 });
 

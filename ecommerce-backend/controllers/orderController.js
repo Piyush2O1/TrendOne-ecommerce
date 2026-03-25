@@ -1,6 +1,13 @@
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
-const Product = require('../models/Product');
+
+const REQUIRED_SHIPPING_FIELDS = ['street', 'city', 'state', 'zipCode', 'country'];
+
+const isValidShippingAddress = (shippingAddress = {}) => (
+  REQUIRED_SHIPPING_FIELDS.every((field) => (
+    typeof shippingAddress[field] === 'string' && shippingAddress[field].trim()
+  ))
+);
 
 // @desc    Place order from cart
 // @route   POST /api/orders
@@ -10,10 +17,30 @@ const placeOrder = async (req, res) => {
     const userId = req.user.id;
     const { shippingAddress } = req.body;
 
+    if (!isValidShippingAddress(shippingAddress)) {
+      return res.status(400).json({ message: 'Please provide a complete shipping address' });
+    }
+
     // Get user's cart
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    for (const item of cart.items) {
+      if (!item.product) {
+        return res.status(400).json({ message: 'One or more cart items are no longer available' });
+      }
+
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        return res.status(400).json({ message: 'Cart contains an invalid quantity' });
+      }
+
+      if (item.quantity > item.product.stock) {
+        return res.status(400).json({
+          message: `${item.product.name} only has ${item.product.stock} item(s) left in stock`,
+        });
+      }
     }
 
     // Calculate total price and prepare order products
@@ -39,10 +66,6 @@ const placeOrder = async (req, res) => {
     });
 
     const createdOrder = await order.save();
-
-    // Clear cart
-    cart.items = [];
-    await cart.save();
 
     // Populate product details in response
     await createdOrder.populate('user', 'name email');

@@ -1,6 +1,8 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Order = require('../models/Order');
+const Cart = require('../models/Cart');
+const Product = require('../models/Product');
 
 // Check if Razorpay is properly configured
 const isRazorpayConfigured = process.env.RAZORPAY_KEY_ID && 
@@ -14,6 +16,80 @@ if (isRazorpayConfigured) {
     key_secret: process.env.RAZORPAY_KEY_SECRET,
   });
 }
+
+const createHttpError = (statusCode, message) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
+const finalizeSuccessfulPayment = async ({ orderId, userId, razorpayOrderId, razorpayPaymentId }) => {
+  const session = await Order.startSession();
+
+  try {
+    let finalizedOrder;
+
+    await session.withTransaction(async () => {
+      const order = await Order.findById(orderId).session(session);
+
+      if (!order) {
+        throw createHttpError(404, 'Order not found');
+      }
+
+      if (order.user.toString() !== userId) {
+        throw createHttpError(403, 'Not authorized');
+      }
+
+      if (order.status !== 'pending') {
+        throw createHttpError(400, 'Order is already processed');
+      }
+
+      if (!order.razorpayOrderId || order.razorpayOrderId !== razorpayOrderId) {
+        throw createHttpError(400, 'Payment order mismatch');
+      }
+
+      for (const item of order.products) {
+        const updatedProduct = await Product.findOneAndUpdate(
+          {
+            _id: item.product,
+            stock: { $gte: item.quantity },
+          },
+          {
+            $inc: { stock: -item.quantity },
+          },
+          {
+            new: true,
+            session,
+          }
+        );
+
+        if (!updatedProduct) {
+          throw createHttpError(
+            409,
+            `${item.name} is no longer available in the requested quantity`
+          );
+        }
+      }
+
+      order.status = 'paid';
+      order.razorpayPaymentId = razorpayPaymentId;
+      order.paidAt = new Date();
+      await order.save({ session });
+
+      await Cart.findOneAndUpdate(
+        { user: userId },
+        { $set: { items: [] } },
+        { session }
+      );
+
+      finalizedOrder = order;
+    });
+
+    return finalizedOrder;
+  } finally {
+    await session.endSession();
+  }
+};
 
 // @desc    Create Razorpay order
 // @route   POST /api/payment/create-order
@@ -39,6 +115,20 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order is already processed' });
     }
 
+    for (const item of order.products) {
+      const product = await Product.findById(item.product).select('stock name');
+
+      if (!product) {
+        return res.status(400).json({ message: `${item.name} is no longer available` });
+      }
+
+      if (product.stock < item.quantity) {
+        return res.status(409).json({
+          message: `${product.name} only has ${product.stock} item(s) left in stock`,
+        });
+      }
+    }
+
     if (!isRazorpayConfigured) {
       // Mock payment for testing
       const mockOrderId = `mock_order_${Date.now()}_${orderId}`;
@@ -47,7 +137,7 @@ const createOrder = async (req, res) => {
 
       return res.json({
         orderId: mockOrderId,
-        amount: order.totalPrice * 100,
+        amount: Math.round(order.totalPrice * 100),
         currency: 'INR',
         key: 'mock_key_for_testing',
         isMock: true,
@@ -56,7 +146,7 @@ const createOrder = async (req, res) => {
 
     // Create Razorpay order
     const options = {
-      amount: order.totalPrice * 100, // Razorpay expects amount in paisa
+      amount: Math.round(order.totalPrice * 100), // Razorpay expects amount in paisa
       currency: 'INR',
       receipt: `order_${orderId}`,
       payment_capture: 1, // Auto capture
@@ -103,18 +193,28 @@ const verifyPayment = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    if (order.status !== 'pending') {
+      return res.status(400).json({ message: 'Order is already processed' });
+    }
+
+    if (!order.razorpayOrderId) {
+      return res.status(400).json({ message: 'Payment order not initialized' });
+    }
+
     if (!isRazorpayConfigured) {
       // Mock payment verification for testing
-      if (razorpay_order_id && razorpay_order_id.startsWith('mock_order_')) {
-        order.status = 'paid';
-        order.razorpayPaymentId = `mock_payment_${Date.now()}`;
-        order.paidAt = Date.now();
-        await order.save();
+      if (razorpay_order_id === order.razorpayOrderId && razorpay_payment_id) {
+        const updatedOrder = await finalizeSuccessfulPayment({
+          orderId,
+          userId: req.user.id,
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+        });
 
         return res.json({
           success: true,
           message: 'Mock payment verified successfully (Testing Mode)',
-          order,
+          order: updatedOrder,
         });
       } else {
         order.status = 'failed';
@@ -127,6 +227,10 @@ const verifyPayment = async (req, res) => {
     }
 
     // Verify signature
+    if (razorpay_order_id !== order.razorpayOrderId) {
+      return res.status(400).json({ message: 'Payment order mismatch' });
+    }
+
     const sign = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSign = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -134,16 +238,17 @@ const verifyPayment = async (req, res) => {
       .digest('hex');
 
     if (razorpay_signature === expectedSign) {
-      // Payment verified successfully
-      order.status = 'paid';
-      order.razorpayPaymentId = razorpay_payment_id;
-      order.paidAt = Date.now();
-      await order.save();
+      const updatedOrder = await finalizeSuccessfulPayment({
+        orderId,
+        userId: req.user.id,
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id,
+      });
 
       res.json({
         success: true,
         message: 'Payment verified successfully',
-        order,
+        order: updatedOrder,
       });
     } else {
       // Payment verification failed
@@ -156,6 +261,10 @@ const verifyPayment = async (req, res) => {
       });
     }
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+
     console.error('Payment verification error:', error);
     res.status(500).json({ message: 'Payment verification failed' });
   }
